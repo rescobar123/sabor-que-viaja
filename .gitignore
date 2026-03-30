@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+
+# Database
+db/*.sqlite
+db/*.sqlite-shm
+db/*.sqlite-wal
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+
+# Debug
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+.idea/
