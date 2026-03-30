@@ -11,7 +11,18 @@ export async function GET() {
       db("egg_prices").select("*"),
     ]);
 
-    return NextResponse.json({ plans, eggPrices });
+    const parsedPlans = plans.map((p: any) => ({
+      ...p,
+      price_monthly: Number(p.price_monthly),
+    }));
+
+    const parsedEggPrices = eggPrices.map((ep: any) => ({
+      ...ep,
+      price_per_egg: Number(ep.price_per_egg),
+      price_per_carton: Number(ep.price_per_carton),
+    }));
+
+    return NextResponse.json({ plans: parsedPlans, eggPrices: parsedEggPrices });
   } catch (error) {
     console.error("[GET /api/plans]", error);
     return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 });

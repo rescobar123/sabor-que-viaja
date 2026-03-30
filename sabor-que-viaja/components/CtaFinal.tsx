@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageCircle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function CtaFinal() {
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50212345678";
@@ -25,21 +25,19 @@ export default function CtaFinal() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/pedido"
+            href="/pedido?mode=subscription"
             className="inline-flex items-center justify-center gap-2 bg-amarillo hover:bg-yellow-400 active:bg-yellow-500 text-verde-principal font-bold px-8 py-4 rounded-full text-base transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
-            Iniciar mi suscripción
+            Suscribirme
             <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
           </Link>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/pedido?mode=one_time"
             className="inline-flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white text-white hover:bg-white/10 font-semibold px-8 py-4 rounded-full text-base transition-all duration-200"
           >
-            <MessageCircle className="w-5 h-5" strokeWidth={1.75} />
-            Escribirnos por WhatsApp
-          </a>
+            Hacer un pedido
+            <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+          </Link>
         </div>
       </div>
     </section>

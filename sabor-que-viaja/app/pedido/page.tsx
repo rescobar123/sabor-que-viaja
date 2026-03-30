@@ -8,7 +8,13 @@ export const metadata: Metadata = {
   description: "Suscríbete y recibe huevos frescos cada semana directo en tu puerta.",
 };
 
-export default function PedidoPage() {
+interface Props {
+  searchParams: { mode?: string; plan?: string };
+}
+
+export default function PedidoPage({ searchParams }: Props) {
+  const isSubscription = searchParams.mode !== "one_time";
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -23,13 +29,13 @@ export default function PedidoPage() {
             </svg>
             Volver al inicio
           </Link>
-          <div className="text-5xl mb-4">🥚</div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
-            Inicia tu suscripción
+            {isSubscription ? "Inicia tu suscripción" : "Haz tu pedido"}
           </h1>
           <p className="text-white/80">
-            Completa el formulario y nos comunicamos contigo para coordinar tu
-            primera entrega.
+            {isSubscription
+              ? "Huevos frescos cada semana, directo a tu puerta. Pausa o cancela cuando quieras."
+              : "Un pedido único, sin compromisos. Te coordinamos la entrega."}
           </p>
         </div>
       </div>

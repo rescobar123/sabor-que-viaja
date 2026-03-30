@@ -58,17 +58,17 @@ export default function Hero() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
           <Link
-            href="/pedido"
+            href="/pedido?mode=subscription"
             className="bg-amarillo hover:bg-yellow-400 active:bg-yellow-500 text-verde-principal font-bold px-8 py-4 rounded-full text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
-            Suscribirme ahora
+            Suscribirme
           </Link>
-          <a
-            href="#planes"
+          <Link
+            href="/pedido?mode=one_time"
             className="border-2 border-white/60 text-white hover:border-white hover:bg-white/10 font-semibold px-8 py-4 rounded-full text-base sm:text-lg transition-all duration-200"
           >
-            Ver planes
-          </a>
+            Hacer un pedido
+          </Link>
         </div>
 
         {/* Trust badges */}
