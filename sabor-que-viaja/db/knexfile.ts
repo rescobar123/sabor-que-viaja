@@ -20,7 +20,7 @@ const config: { [key: string]: Knex.Config } = {
     client: "pg",
     connection: process.env.DATABASE_URL,
     migrations: {
-      directory: path.resolve(process.cwd(), "db/migrations"),
+      directory: path.resolve(__dirname, "migrations"),
     },
     pool: { min: 2, max: 10 },
   },

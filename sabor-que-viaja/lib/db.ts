@@ -7,6 +7,16 @@ declare global {
 }
 
 function createDb(): Knex {
+  if (process.env.DATABASE_URL) {
+    return knex({
+      client: "pg",
+      connection: process.env.DATABASE_URL,
+      migrations: {
+        directory: path.resolve(process.cwd(), "db/migrations"),
+      },
+    });
+  }
+
   return knex({
     client: "better-sqlite3",
     connection: {
