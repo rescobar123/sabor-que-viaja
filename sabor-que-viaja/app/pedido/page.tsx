@@ -5,7 +5,7 @@ import OrderForm from "@/components/OrderForm";
 
 export const metadata: Metadata = {
   title: "Hacer pedido — Sabor que viaja",
-  description: "Suscríbete y recibe huevos frescos cada semana directo en tu puerta.",
+  description: "Huevos frescos directo a tu puerta.",
 };
 
 interface Props {
@@ -16,51 +16,34 @@ export default function PedidoPage({ searchParams }: Props) {
   const isSubscription = searchParams.mode !== "one_time";
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-verde-principal py-12 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Volver al inicio
-          </Link>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
-            {isSubscription ? "Inicia tu suscripción" : "Haz tu pedido"}
-          </h1>
-          <p className="text-white/80">
-            {isSubscription
-              ? "Huevos frescos cada semana, directo a tu puerta. Pausa o cancela cuando quieras."
-              : "Un pedido único, sin compromisos. Te coordinamos la entrega."}
-          </p>
-        </div>
+    <main className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top bar */}
+      <div className="px-4 pt-6 pb-2 max-w-lg mx-auto w-full">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver
+        </Link>
       </div>
 
-      {/* Form */}
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-          <Suspense fallback={<div className="text-center py-8 text-gray-500">Cargando...</div>}>
-            <OrderForm />
-          </Suspense>
-        </div>
+      {/* Contenido */}
+      <div className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-1">
+          {isSubscription ? "Suscripción semanal" : "Hacer un pedido"}
+        </h1>
+        <p className="text-sm text-gray-400 mb-8">
+          {isSubscription
+            ? "Recibe huevos frescos cada semana. Cancela cuando quieras."
+            : "Sin compromisos. Te coordinamos la entrega."}
+        </p>
 
-        {/* Garantías */}
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          {[
-            { icon: "🔒", label: "Datos seguros" },
-            { icon: "✅", label: "Sin contratos" },
-            { icon: "💬", label: "Soporte directo" },
-          ].map((item) => (
-            <div key={item.label} className="text-sm text-gray-500">
-              <div className="text-2xl mb-1">{item.icon}</div>
-              {item.label}
-            </div>
-          ))}
-        </div>
+        <Suspense fallback={<div className="text-center py-8 text-gray-400">Cargando...</div>}>
+          <OrderForm />
+        </Suspense>
       </div>
     </main>
   );

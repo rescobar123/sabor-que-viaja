@@ -11,12 +11,6 @@ export default function Navbar() {
             Sabor que viaja
           </span>
         </Link>
-        <Link
-          href="/pedido"
-          className="bg-amarillo hover:bg-yellow-400 text-verde-principal font-bold px-5 py-2.5 rounded-full text-sm transition-colors duration-200 shadow-sm"
-        >
-          Hacer pedido
-        </Link>
       </div>
     </nav>
   );
