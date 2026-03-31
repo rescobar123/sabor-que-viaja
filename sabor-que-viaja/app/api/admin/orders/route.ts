@@ -12,13 +12,24 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const status = searchParams.get("status") ?? "pending";
   const limit = 15;
   const offset = (page - 1) * limit;
 
-  const [orders, [{ total }]] = await Promise.all([
+  const type = searchParams.get("type") ?? "all"; // "subscription" | "one_time" | "all"
+
+  const baseQuery = () =>
     db("orders")
       .join("users", "orders.user_id", "users.id")
       .leftJoin("subscriptions", "orders.subscription_id", "subscriptions.id")
+      .modify((q) => {
+        if (status !== "all") q.where("orders.status", status);
+        if (type === "subscription") q.whereNotNull("orders.subscription_id");
+        if (type === "one_time") q.whereNull("orders.subscription_id");
+      });
+
+  const [orders, [{ total }]] = await Promise.all([
+    baseQuery()
       .select(
         "orders.uuid",
         "orders.status",
@@ -34,7 +45,7 @@ export async function GET(req: NextRequest) {
       .orderBy("orders.created_at", "desc")
       .limit(limit)
       .offset(offset),
-    db("orders").count("* as total"),
+    baseQuery().count("* as total"),
   ]);
 
   return NextResponse.json({ orders, total: Number(total), page, limit });

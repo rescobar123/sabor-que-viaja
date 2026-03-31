@@ -26,13 +26,15 @@ export default function AdminPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
+  const [type, setType] = useState<"all" | "subscription" | "one_time">("all");
+  const [status, setStatus] = useState<"pending" | "confirmed" | "all">("pending");
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(15);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrders = useCallback(async (p: number) => {
+  const fetchOrders = useCallback(async (p: number, s: string, t: string) => {
     setLoading(true);
-    const res = await fetch(`/api/admin/orders?page=${p}`);
+    const res = await fetch(`/api/admin/orders?page=${p}&status=${s}&type=${t}`);
     if (res.status === 401) { router.push("/admin/login"); return; }
     const data = await res.json();
     setOrders(data.orders);
@@ -41,7 +43,7 @@ export default function AdminPage() {
     setLoading(false);
   }, [router]);
 
-  useEffect(() => { fetchOrders(page); }, [page, fetchOrders]);
+  useEffect(() => { fetchOrders(page, status, type); }, [page, status, type, fetchOrders]);
 
   async function toggleStatus(uuid: string, current: string) {
     const next = current === "pending" ? "confirmed" : "pending";
@@ -54,7 +56,6 @@ export default function AdminPage() {
   }
 
   const totalPages = Math.ceil(total / limit);
-  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50212345678";
 
   function waUrl(order: Order) {
     const type = order.subscription_id ? "suscripción" : "pedido único";
@@ -65,21 +66,49 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-extrabold text-gray-900">Pedidos</h1>
             <p className="text-sm text-gray-400">{total} en total</p>
           </div>
           <button
-            onClick={async () => {
-              await fetch("/api/admin/login", { method: "DELETE" }).catch(() => {});
-              document.cookie = "admin_session=; max-age=0; path=/";
-              router.push("/admin/login");
-            }}
+            onClick={() => { document.cookie = "admin_session=; max-age=0; path=/"; router.push("/admin/login"); }}
             className="text-xs text-gray-400 hover:text-gray-600 transition"
           >
             Cerrar sesión
           </button>
+        </div>
+
+        {/* Tabs de tipo */}
+        <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-xl w-fit">
+          {(["all", "subscription", "one_time"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => { setType(t); setPage(1); }}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                type === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t === "all" ? "Todos" : t === "subscription" ? "Suscripciones" : "Pedidos únicos"}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtro de estado */}
+        <div className="flex gap-2 mb-5">
+          {(["pending", "confirmed", "all"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => { setStatus(s); setPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                status === s
+                  ? "bg-verde-principal text-white"
+                  : "bg-white border border-gray-200 text-gray-500 hover:border-gray-300"
+              }`}
+            >
+              {s === "pending" ? "Pendientes" : s === "confirmed" ? "Confirmados" : "Todos"}
+            </button>
+          ))}
         </div>
 
         {loading ? (
