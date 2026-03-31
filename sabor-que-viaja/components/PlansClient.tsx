@@ -1,118 +1,54 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { type Plan, type EggSize, EGG_SIZE_LABELS, perEggLabel } from "@/lib/plans";
-
-const FEATURES: Record<number, string[]> = {
-  30: [
-    "30 huevos frescos por semana",
-    "Entrega semanal a domicilio",
-    "Huevos de gallina criolla",
-    "Sin compromiso de permanencia",
-    "Soporte por WhatsApp",
-  ],
-  60: [
-    "60 huevos frescos por semana",
-    "Entrega semanal a domicilio",
-    "Huevos de gallina criolla",
-    "Sin compromiso de permanencia",
-    "Soporte por WhatsApp",
-    "Precio preferencial por volumen",
-  ],
-};
+import { type EggPrice, EGG_SIZE_LABELS, EGGS_PER_CARTON } from "@/lib/plans";
 
 interface Props {
-  plans: Plan[];
+  eggPrices: EggPrice[];
 }
 
-export default function PlansClient({ plans }: Props) {
-  const [size, setSize] = useState<EggSize>("large");
-
-  const filtered = plans.filter((p) => p.egg_size === size);
-
+export default function PlansClient({ eggPrices }: Props) {
   return (
-    <>
-      {/* Toggle tamaño */}
-      <div className="flex justify-center mt-6 mb-10 sm:mb-12">
-        <div className="inline-flex rounded-xl border border-gray-200 p-1 bg-gray-50 gap-1">
-          {(Object.entries(EGG_SIZE_LABELS) as [EggSize, string][]).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setSize(key)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                size === key ? "bg-verde-principal text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+      {eggPrices.map((ep) => (
+        <div key={ep.egg_size} className="rounded-3xl border-2 border-gray-100 bg-gray-50 p-7 flex flex-col gap-6">
+          <h3 className="text-xl font-extrabold text-verde-principal">
+            {EGG_SIZE_LABELS[ep.egg_size]}
+          </h3>
 
-      {/* Tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        {filtered.map((plan) => {
-          const featured = plan.eggs_per_week === 60;
-          return (
-            <div
-              key={plan.uuid}
-              className={`relative rounded-3xl p-7 flex flex-col ${
-                featured
-                  ? "bg-verde-principal text-white shadow-2xl shadow-verde-principal/25 md:scale-105"
-                  : "bg-gray-50 border-2 border-gray-200"
-              }`}
-            >
-              {featured && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amarillo text-verde-principal font-bold text-xs px-4 py-1.5 rounded-full uppercase tracking-wide">
-                  Más popular
-                </span>
-              )}
-
-              <div className="mb-5">
-                <h3 className={`font-extrabold text-xl mb-0.5 ${featured ? "text-white" : "text-verde-principal"}`}>
-                  {plan.name}
-                </h3>
-                <p className={`text-sm ${featured ? "text-white/70" : "text-gray-500"}`}>
-                  {EGG_SIZE_LABELS[plan.egg_size]} · {plan.eggs_per_week} huevos/semana
-                </p>
-              </div>
-
-              <div className="mb-7">
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-5xl font-extrabold ${featured ? "text-amarillo" : "text-verde-principal"}`}>
-                    Q{plan.price_monthly}
-                  </span>
-                  <span className={`text-base ${featured ? "text-white/60" : "text-gray-400"}`}>/mes</span>
-                </div>
-                <p className={`text-sm mt-1 ${featured ? "text-white/50" : "text-gray-400"}`}>
-                  {perEggLabel(plan.price_monthly, plan.eggs_per_week)} por huevo
-                </p>
-              </div>
-
-              <ul className="flex-1 space-y-2.5 mb-7">
-                {(FEATURES[plan.eggs_per_week] ?? []).map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <span className={`mt-0.5 flex-shrink-0 ${featured ? "text-amarillo" : "text-verde-cta"}`}>✓</span>
-                    <span className={featured ? "text-white/85" : "text-gray-600"}>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={`/pedido?plan=${plan.eggs_per_week}`}
-                className={`block text-center font-bold py-3.5 px-6 rounded-full transition-all duration-200 ${
-                  featured
-                    ? "bg-amarillo text-verde-principal hover:bg-yellow-400"
-                    : "bg-verde-cta text-white hover:bg-verde-hover"
-                }`}
-              >
-                Elegir este plan
-              </Link>
+          {/* Suscripción */}
+          <div className="bg-verde-principal rounded-2xl p-5 text-white">
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">Suscripción semanal</p>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-3xl font-extrabold">Q{ep.sub_price_per_carton}</span>
+              <span className="text-white/60 text-sm">/cartón · semana</span>
             </div>
-          );
-        })}
-      </div>
-    </>
+            <p className="text-white/60 text-xs">Q{(ep.sub_price_per_carton / EGGS_PER_CARTON).toFixed(2)} por huevo · {EGGS_PER_CARTON} huevos/cartón</p>
+            <Link
+              href={`/pedido?mode=subscription`}
+              className="mt-4 block text-center bg-amarillo hover:bg-yellow-400 text-verde-principal font-bold py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Suscribirme
+            </Link>
+          </div>
+
+          {/* Pedido único */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Pedido único</p>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-3xl font-extrabold text-gray-800">Q{ep.price_per_carton}</span>
+              <span className="text-gray-400 text-sm">/cartón</span>
+            </div>
+            <p className="text-gray-400 text-xs">Q{(ep.price_per_carton / EGGS_PER_CARTON).toFixed(2)} por huevo · {EGGS_PER_CARTON} huevos/cartón</p>
+            <Link
+              href={`/pedido?mode=one_time`}
+              className="mt-4 block text-center bg-verde-cta hover:bg-verde-hover text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Hacer pedido
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

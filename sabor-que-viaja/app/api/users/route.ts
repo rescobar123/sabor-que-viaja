@@ -14,12 +14,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const uuid = uuidv4();
+    const normalizedPhone = phone.trim().replace(/\s+/g, "");
 
+    // Si ya existe el teléfono, devolver el usuario existente
+    const existing = await db("users").where({ phone: normalizedPhone }).first();
+    if (existing) {
+      return NextResponse.json({ uuid: existing.uuid }, { status: 200 });
+    }
+
+    const uuid = uuidv4();
     await db("users").insert({
       uuid,
       name: name.trim(),
-      phone: phone.trim(),
+      phone: normalizedPhone,
       address: address.trim(),
     });
 

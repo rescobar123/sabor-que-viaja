@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import MobileCta from "@/components/MobileCta";
 
