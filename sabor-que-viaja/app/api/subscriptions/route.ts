@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const uuid = uuidv4();
 
-    const [id] = await db("subscriptions").insert({
+    await db("subscriptions").insert({
       uuid,
       user_id: user.id,
       plan_type,
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { uuid, id, eggs_per_week: plan.eggs_per_week, price_monthly: plan.price_monthly },
+      { uuid, eggs_per_week: plan.eggs_per_week, price_monthly: plan.price_monthly },
       { status: 201 }
     );
   } catch (error) {

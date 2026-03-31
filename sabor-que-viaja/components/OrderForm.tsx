@@ -2,24 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, User, Phone, MapPin, Check } from "lucide-react";
+import { Loader2, User, Phone, MapPin, Check, Minus, Plus } from "lucide-react";
 import {
   type Plan, type EggPrice, type EggSize,
-  EGG_SIZE_LABELS, perEggLabel, getOneTimeOptions,
+  EGG_SIZE_LABELS, perEggLabel, EGGS_PER_CARTON,
 } from "@/lib/plans";
 
 type OrderMode = "subscription" | "one_time";
-
-function StepLabel({ number, label }: { number: number; label: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <span className="w-5 h-5 rounded-full bg-verde-principal text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0">
-        {number}
-      </span>
-      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
-    </div>
-  );
-}
 
 export default function OrderForm() {
   const router = useRouter();
@@ -27,10 +16,10 @@ export default function OrderForm() {
   const defaultPlanQty = parseInt(searchParams.get("plan") ?? "30");
   const defaultMode = (searchParams.get("mode") as OrderMode) ?? "subscription";
 
-  const [mode, setMode] = useState<OrderMode>(defaultMode);
+  const [mode] = useState<OrderMode>(defaultMode);
   const [eggSize, setEggSize] = useState<EggSize>("large");
   const [planQty, setPlanQty] = useState(defaultPlanQty);
-  const [oneTimeQty, setOneTimeQty] = useState(30);
+  const [cartons, setCartons] = useState(1);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,19 +44,16 @@ export default function OrderForm() {
   const filteredPlans = plans.filter((p) => p.egg_size === eggSize);
   const selectedPlan = filteredPlans.find((p) => p.eggs_per_week === planQty) ?? filteredPlans[0];
   const currentEggPrice = eggPrices.find((ep) => ep.egg_size === eggSize);
-  const oneTimeOptions = currentEggPrice ? getOneTimeOptions(currentEggPrice) : [];
-  const selectedOneTime = oneTimeOptions.find((o) => o.quantity === oneTimeQty) ?? oneTimeOptions[0];
 
-  function switchSize(s: EggSize) {
-    setEggSize(s);
-    setOneTimeQty(30);
-    setError(null);
-  }
+  const totalOneTime = currentEggPrice
+    ? +(currentEggPrice.price_per_carton * cartons).toFixed(2)
+    : 0;
+  const totalEggs = cartons * EGGS_PER_CARTON;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedPlan && mode === "subscription") return;
-    if (!selectedOneTime && mode === "one_time") return;
+    if (mode === "subscription" && !selectedPlan) return;
+    if (mode === "one_time" && !currentEggPrice) return;
     setSubmitting(true);
     setError(null);
 
@@ -104,7 +90,7 @@ export default function OrderForm() {
         if (!subRes.ok) throw new Error(subData.error);
         orderBody = { ...orderBody, subscription_uuid: subData.uuid, quantity: selectedPlan.eggs_per_week };
       } else {
-        orderBody = { ...orderBody, quantity: selectedOneTime.quantity };
+        orderBody = { ...orderBody, quantity: totalEggs };
       }
 
       const orderRes = await fetch("/api/orders", {
@@ -115,7 +101,7 @@ export default function OrderForm() {
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.error);
 
-      const qty = mode === "subscription" ? selectedPlan.eggs_per_week : selectedOneTime.quantity;
+      const qty = mode === "subscription" ? selectedPlan.eggs_per_week : totalEggs;
       router.push(`/confirmacion?name=${encodeURIComponent(name)}&mode=${mode}&qty=${qty}&order=${orderData.uuid}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ocurrió un error inesperado.");
@@ -128,139 +114,151 @@ export default function OrderForm() {
     return (
       <div className="flex items-center justify-center py-16 text-gray-400 gap-2">
         <Loader2 className="w-5 h-5 animate-spin" />
-        Cargando planes...
+        Cargando...
       </div>
     );
   }
 
-  const summaryLabel = mode === "subscription" && selectedPlan
-    ? `${selectedPlan.eggs_per_week} huevos / semana — Q${selectedPlan.price_monthly}/mes`
-    : selectedOneTime
-    ? `${selectedOneTime.label} (${selectedOneTime.sublabel}) — Q${selectedOneTime.price}`
-    : null;
-
   return (
-    <div className="max-w-lg mx-auto space-y-7">
+    <div className="max-w-lg mx-auto space-y-8">
 
-      {/* Paso 1 — Selección */}
+      {/* Paso 1 — Tamaño */}
       <div>
-        <StepLabel number={1} label="Tu pedido" />
-
-        {/* Tamaño */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          1 · Tamaño de huevo
+        </p>
+        <div className="grid grid-cols-2 gap-3">
           {(Object.entries(EGG_SIZE_LABELS) as [EggSize, string][]).map(([key, label]) => {
             const ep = eggPrices.find((e) => e.egg_size === key);
-            const range = plans.filter((p) => p.egg_size === key);
-            const min = range.length ? Math.min(...range.map((p) => p.price_monthly)) : null;
-            const max = range.length ? Math.max(...range.map((p) => p.price_monthly)) : null;
             const selected = eggSize === key;
             return (
               <button
                 key={key}
                 type="button"
-                onClick={() => switchSize(key)}
-                className={`relative flex flex-col items-start px-4 py-3 rounded-xl border-2 text-left transition-all duration-150 ${
+                onClick={() => { setEggSize(key); setError(null); }}
+                className={`relative flex flex-col items-start px-5 py-4 rounded-2xl border-2 text-left transition-all duration-150 ${
                   selected
                     ? "border-verde-principal bg-verde-principal/5"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
               >
                 {selected && (
-                  <span className="absolute top-2 right-2 w-4 h-4 bg-verde-principal rounded-full flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                  <span className="absolute top-3 right-3 w-5 h-5 bg-verde-principal rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
                   </span>
                 )}
-                <span className={`text-sm font-bold ${selected ? "text-verde-principal" : "text-gray-700"}`}>
+                <span className={`text-base font-bold mb-0.5 ${selected ? "text-verde-principal" : "text-gray-800"}`}>
                   {label}
                 </span>
-                <span className="text-xs text-gray-400 mt-0.5">
-                  {mode === "subscription" && min !== null
-                    ? `Q${min}–Q${max}/mes`
-                    : ep ? `Q${ep.price_per_egg.toFixed(2)}/huevo` : ""}
-                </span>
+                {ep && (
+                  <span className="text-xs text-gray-400">
+                    Q{ep.price_per_egg.toFixed(2)} c/u
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
+      </div>
 
-        {/* Planes de suscripción */}
+      {/* Paso 2 — Cantidad / Plan */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          {mode === "subscription" ? "2 · Plan semanal" : "2 · Cantidad"}
+        </p>
+
+        {/* Suscripción — tarjetas de plan */}
         {mode === "subscription" && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {filteredPlans.map((p) => {
-              const selected = planQty === p.eggs_per_week;
+              const selected = (selectedPlan?.eggs_per_week ?? planQty) === p.eggs_per_week;
               return (
                 <button
                   key={p.uuid}
                   type="button"
                   onClick={() => setPlanQty(p.eggs_per_week)}
-                  className={`relative flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all duration-150 ${
+                  className={`relative flex flex-col items-start p-5 rounded-2xl border-2 text-left transition-all duration-150 ${
                     selected
                       ? "border-verde-principal bg-verde-principal/5"
                       : "border-gray-200 hover:border-gray-300 bg-white"
                   }`}
                 >
                   {selected && (
-                    <span className="absolute top-2 right-2 w-4 h-4 bg-verde-principal rounded-full flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                    <span className="absolute top-3 right-3 w-5 h-5 bg-verde-principal rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
                     </span>
                   )}
-                  <span className={`text-xs font-semibold uppercase tracking-wide mb-1 ${selected ? "text-verde-cta" : "text-gray-400"}`}>
+                  <span className={`text-xs font-semibold uppercase tracking-wide mb-2 ${selected ? "text-verde-cta" : "text-gray-400"}`}>
                     {p.name}
                   </span>
-                  <span className="font-extrabold text-gray-800 text-lg leading-none">{p.eggs_per_week} huevos</span>
-                  <span className="text-gray-400 text-xs mt-0.5">por semana</span>
-                  <span className={`mt-2.5 text-sm font-bold ${selected ? "text-verde-principal" : "text-gray-600"}`}>
-                    Q{p.price_monthly}<span className="font-normal text-gray-400">/mes</span>
+                  <span className="text-2xl font-extrabold text-gray-800 leading-none">
+                    {p.eggs_per_week}
+                    <span className="text-sm font-normal text-gray-400 ml-1">huevos/sem</span>
                   </span>
-                  <span className="text-xs text-gray-400">{perEggLabel(p.price_monthly, p.eggs_per_week)}</span>
+                  <div className={`mt-3 pt-3 border-t w-full ${selected ? "border-verde-principal/20" : "border-gray-100"}`}>
+                    <span className={`text-lg font-bold ${selected ? "text-verde-principal" : "text-gray-700"}`}>
+                      Q{p.price_monthly}
+                      <span className="text-xs font-normal text-gray-400">/mes</span>
+                    </span>
+                    <p className="text-xs text-gray-400 mt-0.5">{perEggLabel(p.price_monthly, p.eggs_per_week)}</p>
+                  </div>
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* Pedido único */}
-        {mode === "one_time" && (
-          <div className="grid grid-cols-2 gap-2">
-            {oneTimeOptions.map((opt) => {
-              const selected = oneTimeQty === opt.quantity;
-              return (
+        {/* Pedido único — stepper de cartones */}
+        {mode === "one_time" && currentEggPrice && (
+          <div className="bg-white border-2 border-gray-200 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Cartones</p>
+                <p className="text-xs text-gray-400">{EGGS_PER_CARTON} huevos por cartón</p>
+              </div>
+              <div className="flex items-center gap-3">
                 <button
-                  key={opt.quantity}
                   type="button"
-                  onClick={() => setOneTimeQty(opt.quantity)}
-                  className={`relative flex flex-col items-start px-4 py-3 rounded-xl border-2 text-left transition-all duration-150 ${
-                    selected
-                      ? "border-verde-principal bg-verde-principal/5"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
+                  onClick={() => setCartons((c) => Math.max(1, c - 1))}
+                  className="w-9 h-9 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 hover:border-verde-principal hover:text-verde-principal transition-colors disabled:opacity-30"
+                  disabled={cartons <= 1}
                 >
-                  {selected && (
-                    <span className="absolute top-2 right-2 w-4 h-4 bg-verde-principal rounded-full flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-                    </span>
-                  )}
-                  <span className={`text-sm font-bold ${selected ? "text-verde-principal" : "text-gray-700"}`}>
-                    {opt.label}
-                  </span>
-                  <span className="text-xs text-gray-400">{opt.sublabel}</span>
-                  <span className={`mt-2 text-base font-extrabold ${selected ? "text-verde-principal" : "text-gray-800"}`}>
-                    Q{opt.price}
-                  </span>
-                  <span className="text-xs text-gray-400">{opt.unit_label}</span>
+                  <Minus className="w-4 h-4" strokeWidth={2.5} />
                 </button>
-              );
-            })}
+                <span className="text-2xl font-extrabold text-gray-800 w-6 text-center">{cartons}</span>
+                <button
+                  type="button"
+                  onClick={() => setCartons((c) => Math.min(10, c + 1))}
+                  className="w-9 h-9 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 hover:border-verde-principal hover:text-verde-principal transition-colors disabled:opacity-30"
+                  disabled={cartons >= 10}
+                >
+                  <Plus className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-between pt-4 border-t border-gray-100">
+              <div>
+                <p className="text-xs text-gray-400">{totalEggs} huevos en total</p>
+                <p className="text-xs text-gray-400">Q{currentEggPrice.price_per_egg.toFixed(2)} c/u</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-extrabold text-verde-principal">Q{totalOneTime}</p>
+                <p className="text-xs text-gray-400">total</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Paso 2 — Tus datos */}
+      {/* Paso 3 — Datos de contacto */}
       <form onSubmit={handleSubmit}>
-        <StepLabel number={2} label="Tus datos" />
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          3 · Tus datos
+        </p>
         <div className="space-y-3">
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text" required value={name}
               onChange={(e) => setName(e.target.value)}
@@ -269,7 +267,7 @@ export default function OrderForm() {
             />
           </div>
           <div className="relative">
-            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="tel" required value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -278,7 +276,7 @@ export default function OrderForm() {
             />
           </div>
           <div className="relative">
-            <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-400" />
+            <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
             <textarea
               required rows={2} value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -289,12 +287,30 @@ export default function OrderForm() {
         </div>
 
         {/* Resumen */}
-        {summaryLabel && (
-          <div className="mt-4 flex items-center gap-3 bg-verde-principal/5 border border-verde-principal/20 rounded-xl px-4 py-3">
-            <Check className="w-4 h-4 text-verde-principal flex-shrink-0" strokeWidth={2.5} />
-            <span className="text-sm text-verde-principal font-medium">{summaryLabel}</span>
+        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400 mb-0.5">Tu pedido</p>
+            {mode === "subscription" && selectedPlan ? (
+              <p className="text-sm font-semibold text-gray-700">
+                {selectedPlan.eggs_per_week} huevos/sem · {EGG_SIZE_LABELS[eggSize]}
+              </p>
+            ) : (
+              <p className="text-sm font-semibold text-gray-700">
+                {cartons} {cartons === 1 ? "cartón" : "cartones"} · {EGG_SIZE_LABELS[eggSize]}
+              </p>
+            )}
           </div>
-        )}
+          <div className="text-right">
+            <p className="text-xs text-gray-400 mb-0.5">
+              {mode === "subscription" ? "mensual" : "total"}
+            </p>
+            <p className="text-base font-extrabold text-verde-principal">
+              {mode === "subscription" && selectedPlan
+                ? `Q${selectedPlan.price_monthly}`
+                : `Q${totalOneTime}`}
+            </p>
+          </div>
+        </div>
 
         {error && (
           <div className="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
@@ -309,15 +325,13 @@ export default function OrderForm() {
             <><Loader2 className="w-5 h-5 animate-spin" strokeWidth={2} />Procesando...</>
           ) : mode === "subscription" ? (
             "Confirmar suscripción"
-          ) : selectedOneTime ? (
-            `Confirmar pedido — Q${selectedOneTime.price}`
           ) : (
-            "Confirmar pedido"
+            `Confirmar pedido — Q${totalOneTime}`
           )}
         </button>
 
         <p className="text-center text-xs text-gray-400 mt-3">
-          Te contactamos para coordinar la entrega. Sin compromisos a largo plazo.
+          Te contactamos para coordinar la entrega.
         </p>
       </form>
     </div>

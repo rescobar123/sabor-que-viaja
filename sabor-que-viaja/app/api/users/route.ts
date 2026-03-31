@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
 
     const uuid = uuidv4();
 
-    const [id] = await db("users").insert({
+    await db("users").insert({
       uuid,
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
     });
 
-    return NextResponse.json({ uuid, id }, { status: 201 });
+    return NextResponse.json({ uuid }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/users]", error);
     return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 });
